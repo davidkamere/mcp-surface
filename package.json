@@ -1,0 +1,12 @@
+{
+  "name": "mcpsurface",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.8.1",
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm --filter @mcpsurface/shared build && pnpm -r typecheck",
+    "dev:web": "pnpm --filter @mcpsurface/web dev",
+    "dev:server": "pnpm --filter @mcpsurface/server dev"
+  }
+}
