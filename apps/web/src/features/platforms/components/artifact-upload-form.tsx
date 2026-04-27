@@ -11,9 +11,15 @@ interface ArtifactUploadFormProps {
     mimeType?: string;
     contentBase64: string;
   }) => Promise<void>;
+  embedded?: boolean;
 }
 
-export function ArtifactUploadForm({ isUploading, error, onUpload }: ArtifactUploadFormProps) {
+export function ArtifactUploadForm({
+  isUploading,
+  error,
+  onUpload,
+  embedded = false,
+}: ArtifactUploadFormProps) {
   const [label, setLabel] = useState("");
   const [file, setFile] = useState<File | null>(null);
 
@@ -47,11 +53,12 @@ export function ArtifactUploadForm({ isUploading, error, onUpload }: ArtifactUpl
   }
 
   return (
-    <form className="panel form-panel compact-panel" onSubmit={handleSubmit}>
+    <form className={embedded ? "form-panel compact-panel setup-section" : "panel form-panel compact-panel"} onSubmit={handleSubmit}>
       <div className="panel-header">
         <div>
-          <p className="eyebrow">Artifacts</p>
+          <p className="eyebrow">Step 2</p>
           <h2>Attach local reference files</h2>
+          <p className="muted-text">Upload specs or exports when the public docs are incomplete.</p>
         </div>
       </div>
 

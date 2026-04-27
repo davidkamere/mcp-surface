@@ -3,9 +3,11 @@ import type {
   Platform,
   ResearchFinding,
   ResearchJob,
+  ResearchJobStage,
   ResearchSource,
 } from "@mcpsurface/shared";
 import { createId } from "../../lib/ids.js";
+import { GenerationService } from "../generation/generation.service.js";
 import { PlatformsRepository } from "../platforms/platforms.repository.js";
 import { ResearchRepository } from "./research.repository.js";
 import { runResearchWorkflow } from "./research-workflow.js";
@@ -14,6 +16,7 @@ export class ResearchService {
   constructor(
     private readonly researchRepository: ResearchRepository,
     private readonly platformsRepository: PlatformsRepository,
+    private readonly generationService?: GenerationService,
   ) {}
 
   async listJobsForPlatform(platformId: string, userId: string): Promise<ResearchJob[]> {
@@ -78,6 +81,8 @@ export class ResearchService {
       id: createId(),
       platformId,
       status: "queued",
+      currentStage: "queued",
+      stageMessage: "Queued and waiting to start research.",
       sourceCount: 0,
       findingCount: 0,
       capabilityCount: 0,
@@ -109,6 +114,8 @@ export class ResearchService {
     const runningJob: ResearchJob = {
       ...job,
       status: "running",
+      currentStage: "source_discovery",
+      stageMessage: "Discovering and classifying sources.",
       startedAt,
       updatedAt: startedAt,
       errorMessage: undefined,
@@ -121,6 +128,9 @@ export class ResearchService {
       const result = await runResearchWorkflow({
         platform,
         job: runningJob,
+        onStageUpdate: async (stage, message, progress) => {
+          await this.updateJobStage(jobId, stage, message, progress);
+        },
       });
 
       await this.persistJobArtifacts(jobId, platform.id, result);
@@ -137,6 +147,8 @@ export class ResearchService {
       refreshedJobs[refreshedIndex] = {
         ...refreshedJob,
         status: "completed",
+        currentStage: "completed",
+        stageMessage: "Research completed. Review sources, findings, and synthesized capabilities.",
         sourceCount: result.sources.length,
         findingCount: result.findings.length,
         capabilityCount: result.capabilities.length,
@@ -144,6 +156,23 @@ export class ResearchService {
         updatedAt: completedAt,
       };
       await this.researchRepository.saveJobs(refreshedJobs);
+
+      const generationSummary = await this.generateArtifactsIfUseful(platform, refreshedJobs[refreshedIndex], result.capabilities);
+
+      if (generationSummary) {
+        const completedJobs = await this.researchRepository.listJobs();
+        const completedIndex = completedJobs.findIndex((entry) => entry.id === jobId);
+        const completedJob = completedJobs[completedIndex];
+
+        if (completedIndex >= 0 && completedJob) {
+          completedJobs[completedIndex] = {
+            ...completedJob,
+            stageMessage: generationSummary,
+            updatedAt: new Date().toISOString(),
+          };
+          await this.researchRepository.saveJobs(completedJobs);
+        }
+      }
     } catch (error) {
       const failedAt = new Date().toISOString();
       const refreshedJobs = await this.researchRepository.listJobs();
@@ -157,10 +186,36 @@ export class ResearchService {
       refreshedJobs[refreshedIndex] = {
         ...refreshedJob,
         status: "failed",
+        currentStage: "failed",
         errorMessage: error instanceof Error ? error.message : "Research job failed.",
+        stageMessage:
+          error instanceof Error ? `Research failed: ${error.message}` : "Research job failed.",
         updatedAt: failedAt,
       };
       await this.researchRepository.saveJobs(refreshedJobs);
+    }
+  }
+
+  private async generateArtifactsIfUseful(
+    platform: Platform,
+    job: ResearchJob,
+    capabilities: Capability[],
+  ): Promise<string | null> {
+    if (!this.generationService) {
+      return null;
+    }
+
+    if (capabilities.length === 0) {
+      return "Research completed. No capabilities were synthesized yet, so artifacts could not be generated.";
+    }
+
+    try {
+      await this.generationService.generateArtifactsForPlatform(platform.id, platform.createdByUserId, {
+        sourceResearchJobId: job.id,
+      });
+      return "Research completed. Artifacts were generated automatically from the current operation surface.";
+    } catch {
+      return "Research completed. Automatic artifact generation was skipped because compilation did not complete.";
     }
   }
 
@@ -212,5 +267,36 @@ export class ResearchService {
       ...capabilities.filter((entry) => !(entry.researchJobId === jobId || entry.platformId === platformId)),
       ...result.capabilities,
     ]);
+  }
+
+  private async updateJobStage(
+    jobId: string,
+    stage: ResearchJobStage,
+    stageMessage: string,
+    progress?: {
+      sourceCount?: number;
+      findingCount?: number;
+      capabilityCount?: number;
+    },
+  ): Promise<void> {
+    const jobs = await this.researchRepository.listJobs();
+    const jobIndex = jobs.findIndex((entry) => entry.id === jobId);
+    const job = jobs[jobIndex];
+
+    if (jobIndex < 0 || !job) {
+      return;
+    }
+
+    jobs[jobIndex] = {
+      ...job,
+      currentStage: stage,
+      stageMessage,
+      sourceCount: progress?.sourceCount ?? job.sourceCount,
+      findingCount: progress?.findingCount ?? job.findingCount,
+      capabilityCount: progress?.capabilityCount ?? job.capabilityCount,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await this.researchRepository.saveJobs(jobs);
   }
 }

@@ -6,37 +6,27 @@ interface PlatformDetailCardProps {
 
 export function PlatformDetailCard({ platform }: PlatformDetailCardProps) {
   return (
-    <section className="panel detail-card">
-      <div className="panel-header">
-        <div>
-          <p className="eyebrow">{platform.slug}</p>
-          <h1>{platform.name}</h1>
+    <section className="panel detail-card compact-summary-card">
+      <div className="panel-header ">
+        <div className="">
+          <p className="eyebrow">Control rail</p>
+          <h2>{platform.name}</h2>
+          <p className="muted-text platform-slug-line">/{platform.slug}</p>
         </div>
       </div>
 
-      <div className="detail-grid">
-        <div>
-          <h2>Source URLs</h2>
-          <ul className="token-list">
-            {platform.sourceUrls.map((sourceUrl) => (
-              <li key={sourceUrl}>{sourceUrl}</li>
-            ))}
-          </ul>
+      <div className="summary-stats">
+        <div className="summary-stat">
+          <strong>{platform.sourceUrls.length}</strong>
+          <span>Source URLs</span>
         </div>
-
-        <div>
-          <h2>Artifacts</h2>
-          {platform.sourceArtifacts.length > 0 ? (
-            <ul className="token-list">
-              {platform.sourceArtifacts.map((artifact) => (
-                <li key={artifact.id}>
-                  {artifact.label} • {artifact.kind} • {artifact.uri}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="muted-text">No optional artifacts added yet.</p>
-          )}
+        <div className="summary-stat">
+          <strong>{platform.sourceArtifacts.length}</strong>
+          <span>Artifacts</span>
+        </div>
+        <div className="summary-stat">
+          <strong>{new Date(platform.updatedAt).toLocaleDateString()}</strong>
+          <span>Updated</span>
         </div>
       </div>
     </section>

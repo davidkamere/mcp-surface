@@ -38,6 +38,40 @@ export async function fetchSourceDocument(url: string): Promise<RetrievedSourceD
   };
 }
 
+export function isResearchableDocument(document: RetrievedSourceDocument): boolean {
+  const lowerUrl = document.url.toLowerCase();
+  const lowerContentType = (document.contentType ?? "").toLowerCase();
+
+  if (
+    lowerUrl.includes("/_astro/") ||
+    lowerUrl.endsWith(".svg") ||
+    lowerUrl.endsWith(".png") ||
+    lowerUrl.endsWith(".jpg") ||
+    lowerUrl.endsWith(".jpeg") ||
+    lowerUrl.endsWith(".gif") ||
+    lowerUrl.endsWith(".webp") ||
+    lowerUrl.endsWith(".woff") ||
+    lowerUrl.endsWith(".woff2") ||
+    lowerUrl.endsWith(".ttf") ||
+    lowerUrl.endsWith(".eot") ||
+    lowerUrl.endsWith(".css") ||
+    lowerUrl.endsWith(".js") ||
+    /sitemap.*\.xml$/.test(lowerUrl)
+  ) {
+    return false;
+  }
+
+  if (
+    lowerContentType.startsWith("image/") ||
+    lowerContentType.includes("font") ||
+    lowerContentType.includes("octet-stream")
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
 function inferTitle(url: string, content: string): string {
   const titleMatch = content.match(/<title>(.*?)<\/title>/i);
 

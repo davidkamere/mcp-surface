@@ -1,3 +1,4 @@
+import { useUser } from "@clerk/clerk-react";
 import type { Platform } from "@mcpsurface/shared";
 import { Link } from "@tanstack/react-router";
 
@@ -6,6 +7,8 @@ interface PlatformListProps {
 }
 
 export function PlatformList({ platforms }: PlatformListProps) {
+  const { user } = useUser();
+
   return (
     <div className="platform-grid">
       {platforms.map((platform) => (
@@ -17,18 +20,26 @@ export function PlatformList({ platforms }: PlatformListProps) {
             </div>
             <Link
               className="button button-secondary"
-              to="/platforms/$platformId"
+              to={platform.createdByUserId === user?.id ? "/platforms/$platformId" : "/platforms/$platformId/chat"}
               params={{ platformId: platform.id }}
             >
               Open
             </Link>
           </div>
-          <p className="meta-line">{platform.sourceUrls.length} source URL(s)</p>
-          <ul className="token-list">
-            {platform.sourceUrls.map((sourceUrl) => (
-              <li key={sourceUrl}>{sourceUrl}</li>
-            ))}
-          </ul>
+          <div className="summary-stats">
+            <div className="summary-stat">
+              <strong>{platform.sourceUrls.length}</strong>
+              <span>Source URLs</span>
+            </div>
+            <div className="summary-stat">
+              <strong>{platform.sourceArtifacts.length}</strong>
+              <span>Artifacts</span>
+            </div>
+            <div className="summary-stat">
+              <strong>{new Date(platform.updatedAt).toLocaleDateString()}</strong>
+              <span>Updated</span>
+            </div>
+          </div>
         </article>
       ))}
     </div>

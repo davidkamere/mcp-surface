@@ -1,13 +1,12 @@
 # MCPSurface
 
-Phase 1 MVP scaffold for a creator-defined platform builder with:
 
 - pnpm monorepo
 - React + TanStack Router web app
 - Fastify backend
 - shared domain models and contracts
 - Clerk auth shell
-- file-based platform persistence
+
 
 ## Workspace
 

@@ -9,7 +9,6 @@ export function AppShell() {
           <Link className="brand" to="/">
             MCPSurface
           </Link>
-          <p className="tagline">Fresh MVP for creator-defined MCP platforms.</p>
         </div>
         <nav className="nav">
           <Link className="nav-link" to="/platforms">

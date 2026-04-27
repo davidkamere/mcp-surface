@@ -8,6 +8,8 @@ import {
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { getRequestUserId } from "../../lib/request-user.js";
+import { GenerationRepository } from "../generation/generation.repository.js";
+import { GenerationService } from "../generation/generation.service.js";
 import { PlatformsRepository } from "../platforms/platforms.repository.js";
 import { ResearchRepository } from "./research.repository.js";
 import { ResearchService } from "./research.service.js";
@@ -20,7 +22,18 @@ const jobParamsSchema = z.object({
   jobId: z.string().min(1),
 });
 
-const researchService = new ResearchService(new ResearchRepository(), new PlatformsRepository());
+const sharedResearchRepository = new ResearchRepository();
+const sharedPlatformsRepository = new PlatformsRepository();
+const generationService = new GenerationService(
+  new GenerationRepository(),
+  sharedResearchRepository,
+  sharedPlatformsRepository,
+);
+const researchService = new ResearchService(
+  sharedResearchRepository,
+  sharedPlatformsRepository,
+  generationService,
+);
 
 export const researchRoutes: FastifyPluginAsync = async (app) => {
   app.get("/platforms/:platformId/jobs", async (request, reply) => {

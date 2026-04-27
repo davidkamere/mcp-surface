@@ -23,6 +23,9 @@ export function usePlatformResearch(platformId: string) {
   const [isLoading, setIsLoading] = useState(true);
   const [isStarting, setIsStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
 
   useEffect(() => {
     if (!isLoaded || !user) {
@@ -37,33 +40,45 @@ export function usePlatformResearch(platformId: string) {
     async function load() {
       try {
         setIsLoading(true);
+        const knownJobId = activeJobId ?? state.latestJob?.id ?? null;
+
+        if (knownJobId) {
+          const detail = await getResearchJob(knownJobId, userId);
+
+          if (!cancelled) {
+            setState({
+              latestJob: detail.job,
+              sources: detail.sources,
+              findings: detail.findings,
+              capabilities: detail.capabilities,
+            });
+            setLastSyncedAt(Date.now());
+            setError(null);
+          }
+
+          if (runningStatuses.has(detail.job.status) && !cancelled) {
+            timerId = window.setTimeout(() => {
+              void load();
+            }, 2000);
+          }
+
+          return;
+        }
+
         const jobs = await listResearchJobs(platformId, userId);
         const latestJob = jobs[0] ?? null;
+
+        if (!cancelled) {
+          setActiveJobId(latestJob?.id ?? null);
+          setLastSyncedAt(Date.now());
+          setError(null);
+        }
 
         if (!latestJob) {
           if (!cancelled) {
             setState({ latestJob: null, sources: [], findings: [], capabilities: [] });
-            setError(null);
           }
           return;
-        }
-
-        const detail = await getResearchJob(latestJob.id, userId);
-
-        if (!cancelled) {
-          setState({
-            latestJob: detail.job,
-            sources: detail.sources,
-            findings: detail.findings,
-            capabilities: detail.capabilities,
-          });
-          setError(null);
-        }
-
-        if (runningStatuses.has(detail.job.status) && !cancelled) {
-          timerId = window.setTimeout(() => {
-            void load();
-          }, 2000);
         }
       } catch (requestError) {
         if (!cancelled) {
@@ -84,7 +99,7 @@ export function usePlatformResearch(platformId: string) {
         window.clearTimeout(timerId);
       }
     };
-  }, [isLoaded, platformId, user]);
+  }, [activeJobId, isLoaded, platformId, reloadToken, state.latestJob?.id, user]);
 
   async function triggerResearch() {
     if (!user) {
@@ -102,6 +117,9 @@ export function usePlatformResearch(platformId: string) {
         findings: detail.findings,
         capabilities: detail.capabilities,
       });
+      setLastSyncedAt(Date.now());
+      setActiveJobId(detail.job.id);
+      setReloadToken((value) => value + 1);
     } catch (requestError) {
       const message = requestError instanceof Error ? requestError.message : "Unable to start research.";
       setError(message);
@@ -115,7 +133,10 @@ export function usePlatformResearch(platformId: string) {
     ...state,
     isLoading,
     isStarting,
+    isPolling: runningStatuses.has(state.latestJob?.status ?? ""),
+    lastSyncedAt,
     error,
+    refreshResearch: () => setReloadToken((value) => value + 1),
     triggerResearch,
   };
 }

@@ -1,7 +1,7 @@
 import { useUser } from "@clerk/clerk-react";
 import type { Platform } from "@mcpsurface/shared";
 import { useEffect, useState } from "react";
-import { listPlatforms } from "../api/platforms-api";
+import { listPlatformsForEmail } from "../api/platforms-api";
 
 export function usePlatforms() {
   const { user, isLoaded } = useUser();
@@ -15,14 +15,19 @@ export function usePlatforms() {
     }
 
     const currentUser = user;
+    const userEmail =
+      currentUser?.primaryEmailAddress?.emailAddress ??
+      currentUser?.emailAddresses?.find((entry) => Boolean(entry.emailAddress))?.emailAddress ??
+      null;
 
-    if (!currentUser) {
+    if (!currentUser || !userEmail) {
       setPlatforms([]);
       setIsLoading(false);
       return;
     }
 
     const userId = currentUser.id;
+    const resolvedUserEmail = userEmail;
 
     let isActive = true;
 
@@ -31,7 +36,7 @@ export function usePlatforms() {
       setError(null);
 
       try {
-        const nextPlatforms = await listPlatforms(userId);
+        const nextPlatforms = await listPlatformsForEmail(userId, resolvedUserEmail);
 
         if (isActive) {
           setPlatforms(nextPlatforms);

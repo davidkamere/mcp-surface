@@ -19,8 +19,12 @@ export function usePlatformDetail(platformId: string) {
     }
 
     const currentUser = user;
+    const userEmail =
+      currentUser?.primaryEmailAddress?.emailAddress ??
+      currentUser?.emailAddresses?.find((entry) => Boolean(entry.emailAddress))?.emailAddress ??
+      null;
 
-    if (!currentUser) {
+    if (!currentUser || !userEmail) {
       setPlatform(null);
       setIsLoading(false);
       return;
@@ -30,7 +34,7 @@ export function usePlatformDetail(platformId: string) {
     setError(null);
 
     try {
-      const nextPlatform = await getPlatform(platformId, currentUser.id);
+      const nextPlatform = await getPlatform(platformId, currentUser.id, userEmail);
       setPlatform(nextPlatform);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Unable to load platform.");

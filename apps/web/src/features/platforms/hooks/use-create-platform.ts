@@ -9,7 +9,9 @@ export function useCreatePlatform() {
   const [error, setError] = useState<string | null>(null);
 
   async function submit(input: CreatePlatformInput): Promise<Platform> {
-    if (!user) {
+    const userEmail = user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress ?? null;
+
+    if (!user || !userEmail) {
       throw new Error("You must be signed in to create a platform.");
     }
 
@@ -17,7 +19,7 @@ export function useCreatePlatform() {
     setError(null);
 
     try {
-      return await createPlatform(input, user.id);
+      return await createPlatform(input, user.id, userEmail);
     } catch (requestError) {
       const message =
         requestError instanceof Error ? requestError.message : "Unable to create the platform.";

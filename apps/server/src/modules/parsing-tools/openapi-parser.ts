@@ -1,12 +1,23 @@
+import type { CapabilityParameterLocation } from "@mcpsurface/shared";
 import { parse as parseYaml } from "yaml";
+
+export interface ParsedParameter {
+  name: string;
+  in: CapabilityParameterLocation;
+  required: boolean;
+  type?: string | undefined;
+  description?: string | undefined;
+}
 
 export interface ParsedOperation {
   method: string;
   path: string;
   operationId: string;
   summary: string;
-  parameters: string[];
+  description?: string | undefined;
+  parameters: ParsedParameter[];
   security: string[];
+  tags: string[];
 }
 
 export interface ParsedOpenApiDocument {
@@ -49,10 +60,46 @@ export function parseOpenApiDocument(content: string): ParsedOpenApiDocument | n
             }
 
             const name = typeof parameter.name === "string" ? parameter.name : null;
-            const location = typeof parameter.in === "string" ? parameter.in : "unknown";
-            return name ? [`${name} (${location})`] : [];
+            const location = toCapabilityParameterLocation(parameter.in);
+
+            if (!name || !location) {
+              return [];
+            }
+
+            const schema = isRecord(parameter.schema) ? parameter.schema : {};
+            const type = typeof schema.type === "string" ? schema.type : undefined;
+            const description =
+              typeof parameter.description === "string" ? parameter.description : undefined;
+
+            return [
+              {
+                name,
+                in: location,
+                required: Boolean(parameter.required),
+                type,
+                description,
+              },
+            ];
           })
         : [];
+
+      const requestBody = isRecord(operationValue.requestBody) ? operationValue.requestBody : null;
+
+      if (requestBody) {
+        const content = isRecord(requestBody.content) ? requestBody.content : {};
+        const firstMediaType = Object.values(content).find(isRecord);
+        const schema = firstMediaType && isRecord(firstMediaType.schema) ? firstMediaType.schema : {};
+        const bodyType = typeof schema.type === "string" ? schema.type : "object";
+
+        parameters.push({
+          name: "body",
+          in: "body",
+          required: Boolean(requestBody.required),
+          type: bodyType,
+          description:
+            typeof requestBody.description === "string" ? requestBody.description : "Request body",
+        });
+      }
 
       const security = Array.isArray(operationValue.security)
         ? operationValue.security.flatMap((entry) => {
@@ -77,8 +124,13 @@ export function parseOpenApiDocument(content: string): ParsedOpenApiDocument | n
             : typeof operationValue.description === "string"
               ? operationValue.description
               : `${methodKey.toUpperCase()} ${pathKey}`,
+        description:
+          typeof operationValue.description === "string" ? operationValue.description : undefined,
         parameters,
         security,
+        tags: Array.isArray(operationValue.tags)
+          ? operationValue.tags.filter((tag): tag is string => typeof tag === "string")
+          : [],
       });
     }
   }
@@ -105,4 +157,12 @@ function isRecord(value: unknown): value is Record<string, any> {
 
 function isHttpMethod(value: string): boolean {
   return ["get", "post", "put", "patch", "delete", "options", "head"].includes(value);
+}
+
+function toCapabilityParameterLocation(value: unknown): CapabilityParameterLocation | null {
+  if (value === "path" || value === "query" || value === "header") {
+    return value;
+  }
+
+  return null;
 }

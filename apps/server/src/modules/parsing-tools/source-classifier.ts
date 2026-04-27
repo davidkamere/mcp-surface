@@ -11,6 +11,9 @@ export function classifySource(input: ClassifySourceInput): ResearchSourceType {
   const normalizedContentType = (input.contentType ?? "").toLowerCase();
   const normalizedUrl = input.url.toLowerCase();
   const lowerContent = input.content.toLowerCase();
+  const githubExampleMatch =
+    normalizedUrl.includes("github.com") &&
+    /\/(blob|tree)\/.+\/(examples?|samples?|templates?|quickstart|demo|sdk|cookbook)\b/.test(normalizedUrl);
 
   if (
     normalizedContentType.includes("openapi") ||
@@ -22,6 +25,17 @@ export function classifySource(input: ClassifySourceInput): ResearchSourceType {
     looksLikeOpenApi(input.content)
   ) {
     return "openapi";
+  }
+
+  if (
+    githubExampleMatch ||
+    (normalizedUrl.includes("github.com") &&
+      (/curl\s+/i.test(input.content) ||
+        /fetch\s*\(/i.test(input.content) ||
+        /axios\./i.test(input.content) ||
+        /client\./i.test(input.content)))
+  ) {
+    return "github_example";
   }
 
   if (

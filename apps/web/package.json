@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.json && vite build",
-    "typecheck": "pnpm --filter @mcpsurface/shared build && tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test src/**/*.test.ts src/**/*.test.tsx"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.22.11",
@@ -19,6 +20,7 @@
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^4.3.4",
+    "tsx": "^4.19.3",
     "typescript": "^5.8.3",
     "vite": "^6.3.1"
   }
