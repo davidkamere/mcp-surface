@@ -14,7 +14,7 @@
 - `apps/server`: API and persistence
 - `packages/shared`: domain models, schemas, and contracts
 
-## Phase 1 Commands
+## Commands
 
 ```bash
 pnpm install
