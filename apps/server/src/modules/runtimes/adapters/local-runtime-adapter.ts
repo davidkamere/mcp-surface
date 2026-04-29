@@ -1,7 +1,7 @@
 import type { RuntimeAdapter, RuntimeExecutionRequest, RuntimeExecutionResult, RuntimeStartResult, RuntimeStopResult } from "../runtime-adapter.js";
 import type { WorkspaceRuntime } from "@mcpsurface/shared";
 import { executeRuntimeCodeHarness } from "../runtime-code-harness.js";
-import { executeCapabilityHttp } from "../capability-http-executor.js";
+import { executeRuntimeHttp } from "../runtime-http-client.js";
 
 export class LocalRuntimeAdapter implements RuntimeAdapter {
   readonly target = "local" as const;
@@ -35,7 +35,7 @@ export class LocalRuntimeAdapter implements RuntimeAdapter {
 
   async execute(runtime: WorkspaceRuntime, request: RuntimeExecutionRequest): Promise<RuntimeExecutionResult> {
     const environment = getRuntimeExecutionEnvironment(runtime);
-    const output = await executeCapabilityHttp({
+    const output = await executeRuntimeHttp({
       capability: request.capability,
       input: request.input,
       executionTarget: this.target,

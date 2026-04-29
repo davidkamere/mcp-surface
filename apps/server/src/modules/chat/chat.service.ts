@@ -24,7 +24,7 @@ import type { ChatStreamEvent } from "./chat-types.js";
 import { chunkText, withTimeout } from "./chat-utils.js";
 import { ChatTurnRunner } from "./chat-turn-runner.js";
 
-const CHAT_STEP_TIMEOUT_MS = 20_000;
+const CHAT_STEP_TIMEOUT_MS = 50_000;
 
 export class ChatService {
   private readonly approvalFlow: ChatApprovalFlow;

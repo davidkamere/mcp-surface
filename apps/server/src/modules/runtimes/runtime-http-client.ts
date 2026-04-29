@@ -1,7 +1,7 @@
 import { env } from "../../lib/env.js";
 import type { Capability } from "@mcpsurface/shared";
 
-export interface CapabilityHttpExecutorOptions {
+export interface RuntimeHttpExecutionOptions {
   capability: Capability;
   input: Record<string, unknown>;
   executionTarget: string;
@@ -10,7 +10,7 @@ export interface CapabilityHttpExecutorOptions {
   fetchImpl?: typeof fetch;
 }
 
-export async function executeCapabilityHttp(input: CapabilityHttpExecutorOptions) {
+export async function executeRuntimeHttp(input: RuntimeHttpExecutionOptions) {
   const capabilityInput = withAutoParameters(input.input, input.environment);
   validateCapabilityInput(input.capability, capabilityInput);
   const request = buildRequest(input.capability, capabilityInput, input.environment);
@@ -80,10 +80,7 @@ function buildRequest(capability: Capability, input: Record<string, unknown>, en
     }
   }
 
-  return {
-    url,
-    init,
-  };
+  return { url, init };
 }
 
 function buildCapabilityUrl(capability: Capability, input: Record<string, unknown>) {
@@ -132,7 +129,6 @@ function resolveCapabilityBaseUrl(capability: Capability) {
 
 function withAutoParameters(input: Record<string, unknown>, environment?: Record<string, string>) {
   const next = { ...input };
-
   const accountId = resolveExecutionSetting("CLOUDFLARE_ACCOUNT_ID", environment);
 
   if (typeof next.account_id === "undefined" && accountId) {

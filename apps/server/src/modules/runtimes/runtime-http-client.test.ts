@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { Capability } from "@mcpsurface/shared";
-import { executeCapabilityHttp } from "./capability-http-executor.js";
+import { executeRuntimeHttp } from "./runtime-http-client.js";
 
 test("executes a real GET capability request with auto-filled account_id", async () => {
   const capability: Capability = {
@@ -28,7 +28,7 @@ test("executes a real GET capability request with auto-filled account_id", async
     updatedAt: "2026-04-24T12:00:00.000Z",
   };
 
-  const output = await executeCapabilityHttp({
+  const output = await executeRuntimeHttp({
     capability,
     input: {
       account_id: "account-123",
@@ -83,7 +83,7 @@ test("executes a Worker script update as multipart form data", async () => {
   };
 
   let capturedBody: unknown;
-  const output = await executeCapabilityHttp({
+  const output = await executeRuntimeHttp({
     capability,
     input: {
       account_id: "account-123",

@@ -1,6 +1,6 @@
 import { Script, createContext } from "node:vm";
 import type { Capability, GeneratedRuntimeArtifact } from "@mcpsurface/shared";
-import { executeCapabilityHttp } from "./capability-http-executor.js";
+import { executeRuntimeHttp } from "./runtime-http-client.js";
 import type { PendingRuntimeApproval, RuntimeCodeApprovalContext } from "./runtime-adapter.js";
 
 export interface RuntimeCodeHarnessRequest {
@@ -154,7 +154,7 @@ function executeCapability(
     });
   }
 
-  return executeCapabilityHttp(executeInput);
+  return executeRuntimeHttp(executeInput);
 }
 
 class RuntimeApprovalRequiredError extends Error {
