@@ -2,14 +2,16 @@ import {
   createMcpAccessTokenInputSchema,
   createMcpAccessTokenResponseSchema,
   mcpAccessTokensResponseSchema,
-  mcpExecuteResponseSchema,
-  mcpRequestSchema,
-  mcpSearchResponseSchema,
 } from "@mcpsurface/shared";
 import type { FastifyPluginAsync } from "fastify";
 import { z } from "zod";
 import { getRequestUserEmail } from "../../lib/request-user.js";
 import { extractBearerToken } from "./mcp-auth.js";
+import {
+  getSupportedMcpProtocolVersion,
+  handleMcpJsonRpcBody,
+  validateRequestedProtocolVersion,
+} from "./mcp-protocol.js";
 import { McpService } from "./mcp.service.js";
 
 const platformParamsSchema = z.object({
@@ -92,21 +94,33 @@ export const mcpRoutes: FastifyPluginAsync = async (app) => {
       return reply.code(401).send({ message: "Invalid MCP token." });
     }
 
-    const body = mcpRequestSchema.parse(request.body ?? {});
-
-    if (body.type === "search") {
-      const result = await mcpService.search(params.platformId, accessToken.userEmail, body.query?.trim() ?? "");
-      return mcpSearchResponseSchema.parse(result);
+    try {
+      const requestedVersionHeader = request.headers["mcp-protocol-version"];
+      validateRequestedProtocolVersion(
+        typeof requestedVersionHeader === "string" ? requestedVersionHeader : undefined,
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unsupported MCP protocol version.";
+      return reply.code(400).send({ message });
     }
 
-    if (!body.capabilityKey?.trim()) {
-      return reply.code(400).send({ message: "capabilityKey is required for execute requests." });
-    }
-
-    const result = await mcpService.execute(params.platformId, accessToken.userEmail, {
-      capabilityKey: body.capabilityKey,
-      input: body.input ?? {},
+    const responseBody = await handleMcpJsonRpcBody({
+      body: request.body ?? {},
+      platformId: params.platformId,
+      userEmail: accessToken.userEmail,
+      mcpService,
     });
-    return mcpExecuteResponseSchema.parse(result);
+
+    reply.header("mcp-protocol-version", getSupportedMcpProtocolVersion());
+
+    if (responseBody === null) {
+      return reply.code(202).send();
+    }
+
+    if (Array.isArray(responseBody) && responseBody.length === 0) {
+      return reply.code(202).send();
+    }
+
+    return reply.send(responseBody);
   });
 };
