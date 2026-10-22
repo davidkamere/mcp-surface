@@ -6,12 +6,16 @@ import { CloudflareRuntimeAdapter } from "./adapters/cloudflare-runtime-adapter.
 import { DockerRuntimeAdapter } from "./adapters/docker-runtime-adapter.js";
 
 test("falls back to local when docker is unavailable", async () => {
-  const dockerAdapter = new DockerRuntimeAdapter({
-    async run() {
-      throw new Error("docker unavailable");
-    },
-  });
-  const runtimeManager = new RuntimeManager(dockerAdapter, new LocalRuntimeAdapter(), new CloudflareRuntimeAdapter());
+    const dockerAdapter = new DockerRuntimeAdapter({
+        async run() {
+            throw new Error("docker unavailable");
+        },
+    });
+    const runtimeManager = new RuntimeManager(
+        dockerAdapter,
+        new LocalRuntimeAdapter(),
+        new CloudflareRuntimeAdapter(),
+    );
 
-  assert.equal(await runtimeManager.resolveDefaultExecutionTarget(), "local");
+    assert.equal(await runtimeManager.resolveDefaultExecutionTarget(), "local");
 });

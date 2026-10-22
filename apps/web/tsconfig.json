@@ -1,12 +1,12 @@
 {
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "jsx": "react-jsx",
-    "rootDir": ".",
-    "outDir": "dist",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "allowSyntheticDefaultImports": true
-  },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"]
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "jsx": "react-jsx",
+        "rootDir": ".",
+        "outDir": "dist",
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
+        "allowSyntheticDefaultImports": true
+    },
+    "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"]
 }

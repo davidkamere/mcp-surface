@@ -9,12 +9,12 @@ import { shareInviteRoute } from "./routes/share.$inviteToken";
 import { signInRoute } from "./routes/sign-in";
 
 export const routeTree = rootRoute.addChildren([
-  indexRoute,
-  signInRoute,
-  platformsIndexRoute,
-  platformsNewRoute,
-  shareInviteRoute,
-  platformsDetailRoute,
-  platformChatRoute,
-  platformRuntimeDetailRoute,
+    indexRoute,
+    signInRoute,
+    platformsIndexRoute,
+    platformsNewRoute,
+    shareInviteRoute,
+    platformsDetailRoute,
+    platformChatRoute,
+    platformRuntimeDetailRoute,
 ]);

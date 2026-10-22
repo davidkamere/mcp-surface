@@ -4,17 +4,17 @@ import { PlatformDetailPage } from "../features/platforms/pages/platform-detail-
 import { rootRoute } from "./__root";
 
 function PlatformDetailRouteComponent() {
-  const { platformId } = platformsDetailRoute.useParams();
+    const { platformId } = platformsDetailRoute.useParams();
 
-  return (
-    <RequireAuth>
-      <PlatformDetailPage platformId={platformId} />
-    </RequireAuth>
-  );
+    return (
+        <RequireAuth>
+            <PlatformDetailPage platformId={platformId} />
+        </RequireAuth>
+    );
 }
 
 export const platformsDetailRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/platforms/$platformId",
-  component: PlatformDetailRouteComponent,
+    getParentRoute: () => rootRoute,
+    path: "/platforms/$platformId",
+    component: PlatformDetailRouteComponent,
 });

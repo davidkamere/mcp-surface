@@ -4,15 +4,15 @@ import { CreatePlatformPage } from "../features/platforms/pages/create-platform-
 import { rootRoute } from "./__root";
 
 function CreatePlatformRouteComponent() {
-  return (
-    <RequireAuth>
-      <CreatePlatformPage />
-    </RequireAuth>
-  );
+    return (
+        <RequireAuth>
+            <CreatePlatformPage />
+        </RequireAuth>
+    );
 }
 
 export const platformsNewRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/platforms/new",
-  component: CreatePlatformRouteComponent,
+    getParentRoute: () => rootRoute,
+    path: "/platforms/new",
+    component: CreatePlatformRouteComponent,
 });

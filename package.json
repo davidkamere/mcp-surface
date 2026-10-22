@@ -1,13 +1,16 @@
 {
-  "name": "mcpsurface",
-  "private": true,
-  "version": "0.1.0",
-  "packageManager": "pnpm@10.8.1",
-  "scripts": {
-    "build": "pnpm -r build",
-    "typecheck": "pnpm --filter @mcpsurface/shared typecheck && pnpm --filter @mcpsurface/server typecheck && pnpm --filter @mcpsurface/web typecheck",
-    "dev:web": "pnpm --filter @mcpsurface/web dev",
-    "dev:server": "pnpm --filter @mcpsurface/server dev",
-    "reset-dev-db": "node apps/server/scripts/reset-dev-db.mjs"
-  }
+    "name": "mcpsurface",
+    "private": true,
+    "version": "0.1.0",
+    "packageManager": "pnpm@10.8.1",
+    "scripts": {
+        "build": "pnpm -r build",
+        "typecheck": "pnpm --filter @mcpsurface/shared typecheck && pnpm --filter @mcpsurface/server typecheck && pnpm --filter @mcpsurface/web typecheck",
+        "dev:web": "pnpm --filter @mcpsurface/web dev",
+        "dev:server": "pnpm --filter @mcpsurface/server dev",
+        "reset-dev-db": "node apps/server/scripts/reset-dev-db.mjs"
+    },
+    "devDependencies": {
+        "prettier": "^3.9.10"
+    }
 }

@@ -4,15 +4,15 @@ import { PlatformListPage } from "../features/platforms/pages/platform-list-page
 import { rootRoute } from "./__root";
 
 function PlatformsRouteComponent() {
-  return (
-    <RequireAuth>
-      <PlatformListPage />
-    </RequireAuth>
-  );
+    return (
+        <RequireAuth>
+            <PlatformListPage />
+        </RequireAuth>
+    );
 }
 
 export const platformsIndexRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/platforms",
-  component: PlatformsRouteComponent,
+    getParentRoute: () => rootRoute,
+    path: "/platforms",
+    component: PlatformsRouteComponent,
 });

@@ -6,25 +6,25 @@ import { env } from "../lib/env.js";
 const databases = new Map<string, DatabaseSync>();
 
 export async function readDocument<T>(key: string, fallback: T): Promise<T> {
-  const database = await getDatabase();
-  const statement = database.prepare("SELECT value FROM documents WHERE key = ?");
-  const row = statement.get(key) as { value?: string } | undefined;
+    const database = await getDatabase();
+    const statement = database.prepare("SELECT value FROM documents WHERE key = ?");
+    const row = statement.get(key) as { value?: string } | undefined;
 
-  if (!row || typeof row.value !== "string") {
-    return fallback;
-  }
+    if (!row || typeof row.value !== "string") {
+        return fallback;
+    }
 
-  try {
-    return JSON.parse(row.value) as T;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown JSON parse error.";
-    throw new Error(`Unable to parse persisted document ${key}: ${message}`);
-  }
+    try {
+        return JSON.parse(row.value) as T;
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown JSON parse error.";
+        throw new Error(`Unable to parse persisted document ${key}: ${message}`);
+    }
 }
 
 export async function writeDocument<T>(key: string, value: T): Promise<void> {
-  const database = await getDatabase();
-  const statement = database.prepare(`
+    const database = await getDatabase();
+    const statement = database.prepare(`
     INSERT INTO documents(key, value, updated_at)
     VALUES (?, ?, CURRENT_TIMESTAMP)
     ON CONFLICT(key) DO UPDATE SET
@@ -32,26 +32,26 @@ export async function writeDocument<T>(key: string, value: T): Promise<void> {
       updated_at = CURRENT_TIMESTAMP
   `);
 
-  statement.run(key, JSON.stringify(value, null, 2));
+    statement.run(key, JSON.stringify(value, null, 2));
 }
 
 async function getDatabase() {
-  const databasePath = await resolveDatabasePath();
-  const existing = databases.get(databasePath);
+    const databasePath = await resolveDatabasePath();
+    const existing = databases.get(databasePath);
 
-  if (existing) {
-    return existing;
-  }
+    if (existing) {
+        return existing;
+    }
 
-  const database = new DatabaseSync(databasePath, {
-    open: true,
-    readOnly: false,
-    enableForeignKeyConstraints: true,
-    timeout: 5_000,
-    allowExtension: false,
-  });
+    const database = new DatabaseSync(databasePath, {
+        open: true,
+        readOnly: false,
+        enableForeignKeyConstraints: true,
+        timeout: 5_000,
+        allowExtension: false,
+    });
 
-  database.exec(`
+    database.exec(`
     PRAGMA journal_mode = WAL;
     PRAGMA synchronous = NORMAL;
     CREATE TABLE IF NOT EXISTS documents (
@@ -61,40 +61,40 @@ async function getDatabase() {
     );
   `);
 
-  databases.set(databasePath, database);
-  return database;
+    databases.set(databasePath, database);
+    return database;
 }
 
 async function resolveDatabasePath() {
-  const dataDirectory = path.resolve(process.cwd(), env.DATA_DIR);
-  await mkdir(dataDirectory, { recursive: true });
-  return path.resolve(dataDirectory, env.DATABASE_PATH);
+    const dataDirectory = path.resolve(process.cwd(), env.DATA_DIR);
+    await mkdir(dataDirectory, { recursive: true });
+    return path.resolve(dataDirectory, env.DATABASE_PATH);
 }
 
 export function closeAllDatabasesForTests() {
-  for (const database of databases.values()) {
-    try {
-      database.close();
-    } catch {
-      // Ignore close errors during test cleanup.
+    for (const database of databases.values()) {
+        try {
+            database.close();
+        } catch {
+            // Ignore close errors during test cleanup.
+        }
     }
-  }
 
-  databases.clear();
+    databases.clear();
 }
 
 export async function getDatabaseHealth() {
-  const databasePath = await resolveDatabasePath();
-  const exists = await access(databasePath)
-    .then(() => true)
-    .catch(() => false);
-  const database = await getDatabase();
-  const row = database.prepare("SELECT 1 AS ok").get() as { ok?: number } | undefined;
+    const databasePath = await resolveDatabasePath();
+    const exists = await access(databasePath)
+        .then(() => true)
+        .catch(() => false);
+    const database = await getDatabase();
+    const row = database.prepare("SELECT 1 AS ok").get() as { ok?: number } | undefined;
 
-  return {
-    driver: "node:sqlite",
-    path: databasePath,
-    exists,
-    ok: row?.ok === 1,
-  };
+    return {
+        driver: "node:sqlite",
+        path: databasePath,
+        exists,
+        ok: row?.ok === 1,
+    };
 }

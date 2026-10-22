@@ -4,60 +4,65 @@ import { useEffect, useState } from "react";
 import { listPlatformsForEmail } from "../api/platforms-api";
 
 export function usePlatforms() {
-  const { user, isLoaded } = useUser();
-  const [platforms, setPlatforms] = useState<Platform[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+    const { user, isLoaded } = useUser();
+    const [platforms, setPlatforms] = useState<Platform[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!isLoaded) {
-      return;
-    }
-
-    const currentUser = user;
-    const userEmail =
-      currentUser?.primaryEmailAddress?.emailAddress ??
-      currentUser?.emailAddresses?.find((entry) => Boolean(entry.emailAddress))?.emailAddress ??
-      null;
-
-    if (!currentUser || !userEmail) {
-      setPlatforms([]);
-      setIsLoading(false);
-      return;
-    }
-
-    const userId = currentUser.id;
-    const resolvedUserEmail = userEmail;
-
-    let isActive = true;
-
-    async function run() {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const nextPlatforms = await listPlatformsForEmail(userId, resolvedUserEmail);
-
-        if (isActive) {
-          setPlatforms(nextPlatforms);
+    useEffect(() => {
+        if (!isLoaded) {
+            return;
         }
-      } catch (requestError) {
-        if (isActive) {
-          setError(requestError instanceof Error ? requestError.message : "Unable to load platforms.");
+
+        const currentUser = user;
+        const userEmail =
+            currentUser?.primaryEmailAddress?.emailAddress ??
+            currentUser?.emailAddresses?.find((entry) => Boolean(entry.emailAddress))
+                ?.emailAddress ??
+            null;
+
+        if (!currentUser || !userEmail) {
+            setPlatforms([]);
+            setIsLoading(false);
+            return;
         }
-      } finally {
-        if (isActive) {
-          setIsLoading(false);
+
+        const userId = currentUser.id;
+        const resolvedUserEmail = userEmail;
+
+        let isActive = true;
+
+        async function run() {
+            setIsLoading(true);
+            setError(null);
+
+            try {
+                const nextPlatforms = await listPlatformsForEmail(userId, resolvedUserEmail);
+
+                if (isActive) {
+                    setPlatforms(nextPlatforms);
+                }
+            } catch (requestError) {
+                if (isActive) {
+                    setError(
+                        requestError instanceof Error
+                            ? requestError.message
+                            : "Unable to load platforms.",
+                    );
+                }
+            } finally {
+                if (isActive) {
+                    setIsLoading(false);
+                }
+            }
         }
-      }
-    }
 
-    void run();
+        void run();
 
-    return () => {
-      isActive = false;
-    };
-  }, [isLoaded, user]);
+        return () => {
+            isActive = false;
+        };
+    }, [isLoaded, user]);
 
-  return { platforms, isLoading, error };
+    return { platforms, isLoading, error };
 }

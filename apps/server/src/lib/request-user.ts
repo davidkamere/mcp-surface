@@ -1,15 +1,17 @@
 export function getRequestUserId(headerValue: string | string[] | undefined): string | undefined {
-  if (typeof headerValue === "string" && headerValue.trim().length > 0) {
-    return headerValue;
-  }
+    if (typeof headerValue === "string" && headerValue.trim().length > 0) {
+        return headerValue;
+    }
 
-  return undefined;
+    return undefined;
 }
 
-export function getRequestUserEmail(headerValue: string | string[] | undefined): string | undefined {
-  if (typeof headerValue === "string" && headerValue.trim().length > 0) {
-    return headerValue.trim().toLowerCase();
-  }
+export function getRequestUserEmail(
+    headerValue: string | string[] | undefined,
+): string | undefined {
+    if (typeof headerValue === "string" && headerValue.trim().length > 0) {
+        return headerValue.trim().toLowerCase();
+    }
 
-  return undefined;
+    return undefined;
 }

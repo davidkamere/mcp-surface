@@ -5,240 +5,276 @@ import { promisify } from "node:util";
 import type { WorkspaceRuntime } from "@mcpsurface/shared";
 import { env } from "../../../lib/env.js";
 import type {
-  RuntimeAdapter,
-  RuntimeCodeExecutionRequest,
-  RuntimeExecutionRequest,
-  RuntimeExecutionResult,
-  RuntimeStartResult,
-  RuntimeStopResult,
+    RuntimeAdapter,
+    RuntimeCodeExecutionRequest,
+    RuntimeExecutionRequest,
+    RuntimeExecutionResult,
+    RuntimeStartResult,
+    RuntimeStopResult,
 } from "../runtime-adapter.js";
 
 const execFile = promisify(execFileCallback);
 const EXECUTION_SERVER_VERSION = "2026-04-24-runtime-exec-v3";
 
 export interface DockerCommandRunner {
-  run(command: string, args: string[]): Promise<{ stdout: string; stderr: string }>;
+    run(command: string, args: string[]): Promise<{ stdout: string; stderr: string }>;
 }
 
 class DefaultDockerCommandRunner implements DockerCommandRunner {
-  async run(command: string, args: string[]) {
-    return execFile(command, args);
-  }
+    async run(command: string, args: string[]) {
+        return execFile(command, args);
+    }
 }
 
 export class DockerRuntimeAdapter implements RuntimeAdapter {
-  readonly target = "docker" as const;
+    readonly target = "docker" as const;
 
-  constructor(
-    private readonly runner: DockerCommandRunner = new DefaultDockerCommandRunner(),
-    private readonly allocatePort: () => Promise<number> = getAvailablePort,
-  ) {}
+    constructor(
+        private readonly runner: DockerCommandRunner = new DefaultDockerCommandRunner(),
+        private readonly allocatePort: () => Promise<number> = getAvailablePort,
+    ) {}
 
-  async isAvailable() {
-    try {
-      await this.runner.run("docker", ["version", "--format", "{{.Server.Version}}"]);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async isRuntimeRunning(runtime: WorkspaceRuntime) {
-    const containerId = typeof runtime.targetMetadata.containerId === "string" ? runtime.targetMetadata.containerId : null;
-
-    if (!containerId) {
-      return false;
-    }
-
-    try {
-      const { stdout } = await this.runner.run("docker", ["inspect", "-f", "{{.State.Running}}", containerId]);
-      return stdout.trim() === "true";
-    } catch (error) {
-      if (isMissingContainerError(error)) {
-        return false;
-      }
-
-      throw error;
-    }
-  }
-
-  async start(runtime: WorkspaceRuntime): Promise<RuntimeStartResult> {
-    const hostPort = await this.allocatePort();
-    const containerName = `mcpsurface-runtime-${runtime.id}`;
-    const executionScript = buildExecutionServerScript(runtime);
-    const { stdout } = await this.runner.run("docker", [
-      "run",
-      "-d",
-      "--rm",
-      "--name",
-      containerName,
-      "-p",
-      `${hostPort}:${env.RUNTIME_DOCKER_INTERNAL_PORT}`,
-      env.RUNTIME_DOCKER_IMAGE,
-      "node",
-      "-e",
-      executionScript,
-    ]);
-
-    const startedAt = new Date().toISOString();
-    return {
-      status: "running",
-      targetMetadata: {
-        ...runtime.targetMetadata,
-        containerId: stdout.trim(),
-        containerName,
-        endpoint: `http://127.0.0.1:${hostPort}`,
-        port: hostPort,
-        executionServerVersion: EXECUTION_SERVER_VERSION,
-        executionCredentialsFingerprint: getExecutionCredentialsFingerprint(runtime),
-      },
-      startedAt,
-    };
-  }
-
-  async stop(runtime: WorkspaceRuntime): Promise<RuntimeStopResult> {
-    const containerId = typeof runtime.targetMetadata.containerId === "string" ? runtime.targetMetadata.containerId : null;
-
-    if (containerId) {
-      try {
-        await this.runner.run("docker", ["stop", containerId]);
-      } catch (error) {
-        if (!isMissingContainerError(error)) {
-          throw error;
+    async isAvailable() {
+        try {
+            await this.runner.run("docker", ["version", "--format", "{{.Server.Version}}"]);
+            return true;
+        } catch {
+            return false;
         }
-      }
     }
 
-    const stoppedAt = new Date().toISOString();
-    return {
-      status: "stopped",
-      targetMetadata: {
-        ...runtime.targetMetadata,
-      },
-      stoppedAt,
-    };
-  }
+    async isRuntimeRunning(runtime: WorkspaceRuntime) {
+        const containerId =
+            typeof runtime.targetMetadata.containerId === "string"
+                ? runtime.targetMetadata.containerId
+                : null;
 
-  async execute(runtime: WorkspaceRuntime, request: RuntimeExecutionRequest): Promise<RuntimeExecutionResult> {
-    assertExecutionServerVersion(runtime);
-    const endpoint = typeof runtime.targetMetadata.endpoint === "string" ? runtime.targetMetadata.endpoint : null;
+        if (!containerId) {
+            return false;
+        }
 
-    if (!endpoint) {
-      throw new Error("Docker runtime endpoint is unavailable.");
+        try {
+            const { stdout } = await this.runner.run("docker", [
+                "inspect",
+                "-f",
+                "{{.State.Running}}",
+                containerId,
+            ]);
+            return stdout.trim() === "true";
+        } catch (error) {
+            if (isMissingContainerError(error)) {
+                return false;
+            }
+
+            throw error;
+        }
     }
 
-    const response = await fetch(`${endpoint}/execute`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        capability: request.capability,
-        capabilityKey: request.capability.key,
-        input: request.input,
-        runtimeId: runtime.id,
-        executionTarget: this.target,
-      }),
-    });
+    async start(runtime: WorkspaceRuntime): Promise<RuntimeStartResult> {
+        const hostPort = await this.allocatePort();
+        const containerName = `mcpsurface-runtime-${runtime.id}`;
+        const executionScript = buildExecutionServerScript(runtime);
+        const { stdout } = await this.runner.run("docker", [
+            "run",
+            "-d",
+            "--rm",
+            "--name",
+            containerName,
+            "-p",
+            `${hostPort}:${env.RUNTIME_DOCKER_INTERNAL_PORT}`,
+            env.RUNTIME_DOCKER_IMAGE,
+            "node",
+            "-e",
+            executionScript,
+        ]);
 
-    const json = (await response.json().catch(() => null)) as Record<string, unknown> | null;
-
-    if (!response.ok) {
-      return {
-        error: typeof json?.error === "string" ? json.error : `Docker runtime execution failed (${response.status}).`,
-      };
+        const startedAt = new Date().toISOString();
+        return {
+            status: "running",
+            targetMetadata: {
+                ...runtime.targetMetadata,
+                containerId: stdout.trim(),
+                containerName,
+                endpoint: `http://127.0.0.1:${hostPort}`,
+                port: hostPort,
+                executionServerVersion: EXECUTION_SERVER_VERSION,
+                executionCredentialsFingerprint: getExecutionCredentialsFingerprint(runtime),
+            },
+            startedAt,
+        };
     }
 
-    return {
-      output: json ?? {
-        handledBy: this.target,
-      },
-    };
-  }
+    async stop(runtime: WorkspaceRuntime): Promise<RuntimeStopResult> {
+        const containerId =
+            typeof runtime.targetMetadata.containerId === "string"
+                ? runtime.targetMetadata.containerId
+                : null;
 
-  async executeCode(runtime: WorkspaceRuntime, request: RuntimeCodeExecutionRequest): Promise<RuntimeExecutionResult> {
-    assertExecutionServerVersion(runtime);
-    const endpoint = typeof runtime.targetMetadata.endpoint === "string" ? runtime.targetMetadata.endpoint : null;
+        if (containerId) {
+            try {
+                await this.runner.run("docker", ["stop", containerId]);
+            } catch (error) {
+                if (!isMissingContainerError(error)) {
+                    throw error;
+                }
+            }
+        }
 
-    if (!endpoint) {
-      throw new Error("Docker runtime endpoint is unavailable.");
+        const stoppedAt = new Date().toISOString();
+        return {
+            status: "stopped",
+            targetMetadata: {
+                ...runtime.targetMetadata,
+            },
+            stoppedAt,
+        };
     }
 
-    const response = await fetch(`${endpoint}/execute-code`, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        code: request.code,
-        capabilities: request.capabilities,
-        runtimeArtifact: request.runtimeArtifact,
-        runtimeId: runtime.id,
-        executionTarget: this.target,
-        approvalContext: request.approvalContext,
-      }),
-    });
+    async execute(
+        runtime: WorkspaceRuntime,
+        request: RuntimeExecutionRequest,
+    ): Promise<RuntimeExecutionResult> {
+        assertExecutionServerVersion(runtime);
+        const endpoint =
+            typeof runtime.targetMetadata.endpoint === "string"
+                ? runtime.targetMetadata.endpoint
+                : null;
 
-    const json = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+        if (!endpoint) {
+            throw new Error("Docker runtime endpoint is unavailable.");
+        }
 
-    if (!response.ok) {
-      return {
-        error: typeof json?.error === "string" ? json.error : `Docker runtime code execution failed (${response.status}).`,
-        logs: Array.isArray(json?.logs) ? (json.logs as string[]) : [],
-        approval:
-          json?.approval && typeof json.approval === "object"
-            ? (json.approval as import("../runtime-adapter.js").PendingRuntimeApproval)
-            : undefined,
-      };
+        const response = await fetch(`${endpoint}/execute`, {
+            method: "POST",
+            headers: {
+                "content-type": "application/json",
+            },
+            body: JSON.stringify({
+                capability: request.capability,
+                capabilityKey: request.capability.key,
+                input: request.input,
+                runtimeId: runtime.id,
+                executionTarget: this.target,
+            }),
+        });
+
+        const json = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+
+        if (!response.ok) {
+            return {
+                error:
+                    typeof json?.error === "string"
+                        ? json.error
+                        : `Docker runtime execution failed (${response.status}).`,
+            };
+        }
+
+        return {
+            output: json ?? {
+                handledBy: this.target,
+            },
+        };
     }
 
-    return {
-      output: json?.output && typeof json.output === "object" ? (json.output as Record<string, unknown>) : {},
-      logs: Array.isArray(json?.logs) ? (json.logs as string[]) : [],
-      approval:
-        json?.approval && typeof json.approval === "object"
-          ? (json.approval as import("../runtime-adapter.js").PendingRuntimeApproval)
-          : undefined,
-    };
-  }
+    async executeCode(
+        runtime: WorkspaceRuntime,
+        request: RuntimeCodeExecutionRequest,
+    ): Promise<RuntimeExecutionResult> {
+        assertExecutionServerVersion(runtime);
+        const endpoint =
+            typeof runtime.targetMetadata.endpoint === "string"
+                ? runtime.targetMetadata.endpoint
+                : null;
+
+        if (!endpoint) {
+            throw new Error("Docker runtime endpoint is unavailable.");
+        }
+
+        const response = await fetch(`${endpoint}/execute-code`, {
+            method: "POST",
+            headers: {
+                "content-type": "application/json",
+            },
+            body: JSON.stringify({
+                code: request.code,
+                capabilities: request.capabilities,
+                runtimeArtifact: request.runtimeArtifact,
+                runtimeId: runtime.id,
+                executionTarget: this.target,
+                approvalContext: request.approvalContext,
+            }),
+        });
+
+        const json = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+
+        if (!response.ok) {
+            return {
+                error:
+                    typeof json?.error === "string"
+                        ? json.error
+                        : `Docker runtime code execution failed (${response.status}).`,
+                logs: Array.isArray(json?.logs) ? (json.logs as string[]) : [],
+                approval:
+                    json?.approval && typeof json.approval === "object"
+                        ? (json.approval as import("../runtime-adapter.js").PendingRuntimeApproval)
+                        : undefined,
+            };
+        }
+
+        return {
+            output:
+                json?.output && typeof json.output === "object"
+                    ? (json.output as Record<string, unknown>)
+                    : {},
+            logs: Array.isArray(json?.logs) ? (json.logs as string[]) : [],
+            approval:
+                json?.approval && typeof json.approval === "object"
+                    ? (json.approval as import("../runtime-adapter.js").PendingRuntimeApproval)
+                    : undefined,
+        };
+    }
 }
 
 function isMissingContainerError(error: unknown) {
-  if (!(error instanceof Error)) {
-    return false;
-  }
+    if (!(error instanceof Error)) {
+        return false;
+    }
 
-  return /No such container|no such object|cannot find the file specified|container .* not found/i.test(
-    error.message,
-  );
+    return /No such container|no such object|cannot find the file specified|container .* not found/i.test(
+        error.message,
+    );
 }
 
 function assertExecutionServerVersion(runtime: WorkspaceRuntime) {
-  const currentVersion = typeof runtime.targetMetadata.executionServerVersion === "string"
-    ? runtime.targetMetadata.executionServerVersion
-    : null;
-  const currentFingerprint = typeof runtime.targetMetadata.executionCredentialsFingerprint === "string"
-    ? runtime.targetMetadata.executionCredentialsFingerprint
-    : null;
+    const currentVersion =
+        typeof runtime.targetMetadata.executionServerVersion === "string"
+            ? runtime.targetMetadata.executionServerVersion
+            : null;
+    const currentFingerprint =
+        typeof runtime.targetMetadata.executionCredentialsFingerprint === "string"
+            ? runtime.targetMetadata.executionCredentialsFingerprint
+            : null;
 
-  if (
-    currentVersion !== EXECUTION_SERVER_VERSION ||
-    currentFingerprint !== getExecutionCredentialsFingerprint(runtime)
-  ) {
-    throw new Error("Docker runtime execution server is out of date; restart required.");
-  }
+    if (
+        currentVersion !== EXECUTION_SERVER_VERSION ||
+        currentFingerprint !== getExecutionCredentialsFingerprint(runtime)
+    ) {
+        throw new Error("Docker runtime execution server is out of date; restart required.");
+    }
 }
 
 function getExecutionCredentialsFingerprint(runtime: WorkspaceRuntime) {
-  const executionEnvironment = getRuntimeExecutionEnvironment(runtime);
-  return createHash("sha256")
-    .update(`${resolveExecutionSetting("CLOUDFLARE_ACCOUNT_ID", executionEnvironment) ?? ""}:${resolveExecutionSetting("CLOUDFLARE_API_TOKEN", executionEnvironment) ?? ""}`)
-    .digest("hex");
+    const executionEnvironment = getRuntimeExecutionEnvironment(runtime);
+    return createHash("sha256")
+        .update(
+            `${resolveExecutionSetting("CLOUDFLARE_ACCOUNT_ID", executionEnvironment) ?? ""}:${resolveExecutionSetting("CLOUDFLARE_API_TOKEN", executionEnvironment) ?? ""}`,
+        )
+        .digest("hex");
 }
 
 function buildExecutionServerScript(runtime: WorkspaceRuntime) {
-  const executionEnvironment = getRuntimeExecutionEnvironment(runtime);
-  return `
+    const executionEnvironment = getRuntimeExecutionEnvironment(runtime);
+    return `
     const http = require('node:http');
     const vm = require('node:vm');
     const CLOUDFLARE_ACCOUNT_ID = ${JSON.stringify(resolveExecutionSetting("CLOUDFLARE_ACCOUNT_ID", executionEnvironment) ?? null)};
@@ -566,37 +602,40 @@ function buildExecutionServerScript(runtime: WorkspaceRuntime) {
 }
 
 function getRuntimeExecutionEnvironment(runtime: WorkspaceRuntime) {
-  const environment = runtime.targetMetadata.executionEnvironment;
-  return environment && typeof environment === "object" && !Array.isArray(environment)
-    ? (environment as Record<string, string>)
-    : undefined;
+    const environment = runtime.targetMetadata.executionEnvironment;
+    return environment && typeof environment === "object" && !Array.isArray(environment)
+        ? (environment as Record<string, string>)
+        : undefined;
 }
 
-function resolveExecutionSetting(key: "CLOUDFLARE_API_TOKEN" | "CLOUDFLARE_ACCOUNT_ID", environment?: Record<string, string>) {
-  const override = environment?.[key];
-  if (typeof override === "string" && override.trim().length > 0) {
-    return override;
-  }
-  return env[key];
+function resolveExecutionSetting(
+    key: "CLOUDFLARE_API_TOKEN" | "CLOUDFLARE_ACCOUNT_ID",
+    environment?: Record<string, string>,
+) {
+    const override = environment?.[key];
+    if (typeof override === "string" && override.trim().length > 0) {
+        return override;
+    }
+    return env[key];
 }
 
 async function getAvailablePort() {
-  return new Promise<number>((resolve, reject) => {
-    const server = createServer();
+    return new Promise<number>((resolve, reject) => {
+        const server = createServer();
 
-    server.listen(0, "127.0.0.1", () => {
-      const address = server.address();
+        server.listen(0, "127.0.0.1", () => {
+            const address = server.address();
 
-      if (!address || typeof address === "string") {
-        server.close();
-        reject(new Error("Unable to resolve an available port."));
-        return;
-      }
+            if (!address || typeof address === "string") {
+                server.close();
+                reject(new Error("Unable to resolve an available port."));
+                return;
+            }
 
-      const port = address.port;
-      server.close(() => resolve(port));
+            const port = address.port;
+            server.close(() => resolve(port));
+        });
+
+        server.on("error", reject);
     });
-
-    server.on("error", reject);
-  });
 }

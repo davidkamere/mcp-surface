@@ -10,36 +10,36 @@ The core problem it solves is that modern platforms expose large, fast-changing 
 - researches docs, reference pages, and structured specs with a LangGraph workflow
 - extracts explicit API operations and synthesizes canonical capabilities
 - generates:
-  - a runtime artifact for TypeScript execution
-  - an MCP artifact for search and execute
+    - a runtime artifact for TypeScript execution
+    - an MCP artifact for search and execute
 - lets users interact through:
-  - chat
-  - direct runtime execution
-  - external MCP clients
+    - chat
+    - direct runtime execution
+    - external MCP clients
 - enforces:
-  - per-user runtimes
-  - owner approval for risky non-root actions
-  - execution tracing
+    - per-user runtimes
+    - owner approval for risky non-root actions
+    - execution tracing
 
 ## Architecture
 
 The system is organized as a pnpm monorepo:
 
 - `apps/web`
-  - React + TanStack Router frontend
-  - platform setup, research UI, chat UI, runtime UI, sharing, approvals, MCP token management
+    - React + TanStack Router frontend
+    - platform setup, research UI, chat UI, runtime UI, sharing, approvals, MCP token management
 - `apps/server`
-  - Fastify API
-  - research workflow
-  - artifact generation
-  - runtime orchestration
-  - approvals
-  - sharing
-  - external MCP endpoint
+    - Fastify API
+    - research workflow
+    - artifact generation
+    - runtime orchestration
+    - approvals
+    - sharing
+    - external MCP endpoint
 - `packages/shared`
-  - cross-app domain models
-  - contracts
-  - zod schemas
+    - cross-app domain models
+    - contracts
+    - zod schemas
 
 ## End-to-End Flow
 
@@ -63,15 +63,15 @@ flowchart LR
 Research uses a LangGraph pipeline in `apps/server/src/modules/research/`:
 
 1. `source_discovery_agent`
-   - fetches platform-provided URLs and uploaded artifacts
-   - discovers related reference/spec pages
+    - fetches platform-provided URLs and uploaded artifacts
+    - discovers related reference/spec pages
 2. `structured_parser_agent`
-   - parses OpenAPI/Swagger deterministically when available
+    - parses OpenAPI/Swagger deterministically when available
 3. `docs_extraction_agent`
-   - harvests explicit HTTP operations from docs pages
-   - uses one bounded LLM extraction pass for supporting findings
+    - harvests explicit HTTP operations from docs pages
+    - uses one bounded LLM extraction pass for supporting findings
 4. `capability_synthesis_agent`
-   - synthesizes canonical capabilities from operation-backed evidence only
+    - synthesizes canonical capabilities from operation-backed evidence only
 
 Important design choice:
 
@@ -86,11 +86,11 @@ That makes the output suitable for later TypeScript code generation and runtime 
 After research completes, the system generates two artifacts from the capability surface:
 
 - `runtime`
-  - a TypeScript runtime interface with typed capability inputs
-  - used by runtime code execution and chat orchestration
+    - a TypeScript runtime interface with typed capability inputs
+    - used by runtime code execution and chat orchestration
 - `mcp`
-  - a compact MCP surface exposing `search` and `execute`
-  - used by the external MCP endpoint
+    - a compact MCP surface exposing `search` and `execute`
+    - used by the external MCP endpoint
 
 Artifact generation lives in `apps/server/src/modules/generation/`.
 
@@ -188,9 +188,9 @@ DATABASE_PATH=mcpsurface.db
 Useful optional env vars:
 
 - `OPENROUTER_API_KEY`
-  - enables LLM-assisted docs extraction and chat planning/rewrite behavior
+    - enables LLM-assisted docs extraction and chat planning/rewrite behavior
 - `SERPER_API_KEY`
-  - enables web search for related research sources
+    - enables web search for related research sources
 - `OPENROUTER_BASE_URL`
 - `OPENROUTER_APP_NAME`
 - `OPENROUTER_HTTP_REFERER`
@@ -207,4 +207,3 @@ Useful optional env vars:
 - approval requests and owner resolution
 - sharing and invite flow
 - external MCP tokens and endpoint access
-

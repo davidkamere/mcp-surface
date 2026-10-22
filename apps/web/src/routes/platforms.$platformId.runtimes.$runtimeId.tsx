@@ -4,17 +4,17 @@ import { RuntimeDetailPage } from "../features/runtimes/pages/runtime-detail-pag
 import { rootRoute } from "./__root";
 
 function PlatformRuntimeDetailRouteComponent() {
-  const { platformId, runtimeId } = platformRuntimeDetailRoute.useParams();
+    const { platformId, runtimeId } = platformRuntimeDetailRoute.useParams();
 
-  return (
-    <RequireAuth>
-      <RuntimeDetailPage platformId={platformId} runtimeId={runtimeId} />
-    </RequireAuth>
-  );
+    return (
+        <RequireAuth>
+            <RuntimeDetailPage platformId={platformId} runtimeId={runtimeId} />
+        </RequireAuth>
+    );
 }
 
 export const platformRuntimeDetailRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/platforms/$platformId/runtimes/$runtimeId",
-  component: PlatformRuntimeDetailRouteComponent,
+    getParentRoute: () => rootRoute,
+    path: "/platforms/$platformId/runtimes/$runtimeId",
+    component: PlatformRuntimeDetailRouteComponent,
 });
