@@ -3,11 +3,20 @@ import { Link } from "@tanstack/react-router";
 import { ChatWorkspace } from "../components/chat-workspace";
 import { usePlatformChat } from "../hooks/use-platform-chat";
 import { PlatformSharingPanel } from "../../sharing/components/platform-sharing-panel";
+import { ResearchUnlockPanel } from "../../platforms/components/research-unlock-panel";
+import { ChatRuntimeBar } from "../../runtimes/components/chat-runtime-bar";
 
 export function PlatformChatPage({ platformId }: { platformId: string }) {
     const { user } = useUser();
     const chat = usePlatformChat(platformId);
     const isOwner = chat.context?.platform.createdByUserId === user?.id;
+
+    if (
+        !chat.isLoading &&
+        chat.error?.toLowerCase().includes("generated artifacts are required")
+    ) {
+        return <ResearchUnlockPanel researchCompleted={false} backToPlatformId={platformId} />;
+    }
 
     return (
         <div className="research-page-shell">
@@ -29,6 +38,16 @@ export function PlatformChatPage({ platformId }: { platformId: string }) {
                 </div>
             </div>
 
+            <ChatRuntimeBar
+                platformId={platformId}
+                runtime={chat.context?.runtime ?? null}
+                isLoading={chat.isLoading}
+                isBusy={chat.isLoading || chat.isStreaming || chat.isApproving}
+                error={chat.error}
+                onStart={chat.startRuntime}
+                onStop={chat.stopRuntime}
+            />
+
             <ChatWorkspace
                 context={chat.context}
                 currentUserEmail={chat.currentUserEmail}
@@ -43,9 +62,6 @@ export function PlatformChatPage({ platformId }: { platformId: string }) {
                 onCreateSession={chat.createNewSession}
                 onApprovalAction={chat.resolveApproval}
                 onSendMessage={chat.sendMessage}
-                onStartRuntime={chat.startRuntime}
-                onStopRuntime={chat.stopRuntime}
-                platformId={platformId}
                 statusLabel={chat.statusLabel}
                 isApproving={chat.isApproving}
             />

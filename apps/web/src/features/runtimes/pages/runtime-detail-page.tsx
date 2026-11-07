@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { usePlatformResearch } from "../../research/hooks/use-platform-research";
 import { usePlatformRuntime } from "../hooks/use-platform-runtime";
+import { ResearchUnlockPanel } from "../../platforms/components/research-unlock-panel";
 
 interface RuntimeDetailPageProps {
     platformId: string;
@@ -26,6 +27,13 @@ export function RuntimeDetailPage({ platformId, runtimeId }: RuntimeDetailPagePr
                 .sort((left, right) => left.name.localeCompare(right.name)),
         [capabilities],
     );
+
+    if (
+        !isLoading &&
+        error?.toLowerCase().includes("generated artifacts are required")
+    ) {
+        return <ResearchUnlockPanel researchCompleted={false} backToPlatformId={platformId} />;
+    }
 
     async function handleExecute() {
         try {

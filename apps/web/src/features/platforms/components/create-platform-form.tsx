@@ -162,7 +162,7 @@ export function CreatePlatformForm({ isSubmitting, error, onSubmit }: CreatePlat
                 <p className="form-hint">
                     {hasUrlIssues
                         ? "Fix invalid or duplicate URLs before continuing."
-                        : "The platform will open into setup after creation."}
+                        : "After creation, setup opens and research starts with these entry points."}
                 </p>
                 <button
                     className="button button-primary"

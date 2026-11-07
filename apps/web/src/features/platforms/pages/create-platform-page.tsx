@@ -12,6 +12,7 @@ export function CreatePlatformPage() {
         await navigate({
             to: "/platforms/$platformId",
             params: { platformId: platform.id },
+            search: { startInitialResearch: true },
         });
     }
 

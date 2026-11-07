@@ -1,11 +1,9 @@
-import { Link } from "@tanstack/react-router";
 import type { ApprovalRequest, ChatMessage } from "@mcpsurface/shared";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChatContextPayload } from "../api/chat-api";
 import type { ChatActivityStep } from "../hooks/use-platform-chat";
 
 interface ChatWorkspaceProps {
-    platformId: string;
     context: ChatContextPayload | null;
     currentUserEmail: string | null;
     approvals: ApprovalRequest[];
@@ -21,12 +19,9 @@ interface ChatWorkspaceProps {
     onCreateSession: () => Promise<void>;
     onApprovalAction: (approvalId: string, decision: "approve" | "reject") => Promise<void>;
     onSendMessage: (content: string) => Promise<void>;
-    onStartRuntime: () => Promise<void>;
-    onStopRuntime: () => Promise<void>;
 }
 
 export function ChatWorkspace({
-    platformId,
     context,
     currentUserEmail,
     approvals,
@@ -42,8 +37,6 @@ export function ChatWorkspace({
     onCreateSession,
     onApprovalAction,
     onSendMessage,
-    onStartRuntime,
-    onStopRuntime,
 }: ChatWorkspaceProps) {
     const [draft, setDraft] = useState("");
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -79,7 +72,6 @@ export function ChatWorkspace({
 
     const isBusy = isStreaming || isApproving || isLoading;
     const canSend = draft.trim().length > 0 && !isBusy;
-    const runtime = context?.runtime ?? null;
     const isRootUser =
         Boolean(currentUserEmail) &&
         Boolean(context?.platform.ownerEmail) &&
@@ -89,7 +81,6 @@ export function ChatWorkspace({
         () => approvals.filter((approval) => approval.status === "pending"),
         [approvals, messages],
     );
-    const runtimeStatusTone = runtime?.status === "running" ? "success" : "neutral";
     const emptyState = useMemo(
         () =>
             context
@@ -119,14 +110,6 @@ export function ChatWorkspace({
                         <h1>{context?.platform.name ?? "Platform chat"}</h1>
                     </div>
                     <div className="chat-toolbar-actions">
-                        {runtime ? (
-                            <span className={`status-pill status-pill-${runtimeStatusTone}`}>
-                                {runtime.status}
-                            </span>
-                        ) : null}
-                        {runtime ? (
-                            <span className="status-pill">{runtime.executionTarget}</span>
-                        ) : null}
                         <button
                             className="button button-secondary"
                             onClick={() => void onCreateSession()}
@@ -134,33 +117,6 @@ export function ChatWorkspace({
                         >
                             New chat
                         </button>
-                        {runtime ? (
-                            <>
-                                <button
-                                    className="button button-secondary"
-                                    disabled={runtime.status === "running" || isBusy}
-                                    onClick={() => void onStartRuntime()}
-                                    type="button"
-                                >
-                                    Start runtime
-                                </button>
-                                <button
-                                    className="button button-secondary"
-                                    disabled={runtime.status !== "running" || isBusy}
-                                    onClick={() => void onStopRuntime()}
-                                    type="button"
-                                >
-                                    Stop runtime
-                                </button>
-                                <Link
-                                    className="button button-secondary"
-                                    params={{ platformId, runtimeId: runtime.id }}
-                                    to="/platforms/$platformId/runtimes/$runtimeId"
-                                >
-                                    Runtime
-                                </Link>
-                            </>
-                        ) : null}
                     </div>
                 </div>
 

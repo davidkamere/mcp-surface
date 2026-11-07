@@ -81,7 +81,6 @@ export function PlatformSourcesEditor({
         const persisted = JSON.stringify(platform.sourceUrls);
         return current !== persisted;
     }, [normalizedSourceUrls, platform.sourceUrls]);
-
     async function handleSubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
@@ -189,7 +188,7 @@ export function PlatformSourcesEditor({
         >
             <div className="panel-header">
                 <div>
-                    <p className="eyebrow">Step 1</p>
+                    <p className="eyebrow">Step 1 · Foundation</p>
                     <h2>Source URLs</h2>
                 </div>
                 <div className="setup-status-cluster">

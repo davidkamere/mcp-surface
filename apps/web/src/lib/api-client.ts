@@ -6,6 +6,7 @@ import {
     createMcpAccessTokenResponseSchema,
     createPlatformShareInviteInputSchema,
     createPlatformInputSchema,
+    generationArtifactsLatestResponseSchema,
     mcpAccessTokensResponseSchema,
     platformShareInviteListResponseSchema,
     platformShareInviteResponseSchema,
@@ -31,6 +32,8 @@ import {
     type ExecutionTrace,
     type McpAccessToken,
     type Platform,
+    type GeneratedMcpArtifact,
+    type GeneratedRuntimeArtifact,
     type PlatformShareInvite,
     type ResearchFinding,
     type ResearchJob,
@@ -338,6 +341,25 @@ export async function uploadPlatformArtifact(
 
     const json = await response.json();
     return appendPlatformArtifactResponseSchema.parse(json).platform;
+}
+
+export async function getLatestPlatformArtifacts(
+    platformId: string,
+    userId: string,
+): Promise<{
+    mcpArtifact: GeneratedMcpArtifact | null;
+    runtimeArtifact: GeneratedRuntimeArtifact | null;
+}> {
+    const response = await fetch(
+        `${apiBaseUrl}/api/generation/platforms/${platformId}/artifacts/latest`,
+        { headers: { "x-user-id": userId } },
+    );
+
+    if (!response.ok) {
+        throw new Error(await buildApiError(response, "Unable to check generated artifacts."));
+    }
+
+    return generationArtifactsLatestResponseSchema.parse(await response.json());
 }
 
 export async function listResearchJobs(platformId: string, userId: string): Promise<ResearchJob[]> {

@@ -54,7 +54,7 @@ export function ResearchStatusCard({
         <section className="panel research-hero-card">
             <div className="research-hero-top">
                 <div>
-                    <p className="eyebrow">Research</p>
+                    <p className="eyebrow">Step 2 · Research</p>
                     <h2>Build the operation inventory</h2>
                 </div>
             </div>

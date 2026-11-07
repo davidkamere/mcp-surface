@@ -70,13 +70,22 @@ export function usePlatformResearch(platformId: string) {
 
                 if (!cancelled) {
                     setActiveJobId(latestJob?.id ?? null);
+                    setState((current) => ({
+                        ...current,
+                        latestJob,
+                    }));
                     setLastSyncedAt(Date.now());
                     setError(null);
                 }
 
                 if (!latestJob) {
                     if (!cancelled) {
-                        setState({ latestJob: null, sources: [], findings: [], capabilities: [] });
+                        setState({
+                            latestJob: null,
+                            sources: [],
+                            findings: [],
+                            capabilities: [],
+                        });
                     }
                     return;
                 }
